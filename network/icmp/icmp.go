@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"net"
 	"time"
 )
@@ -14,11 +15,13 @@ type ICMP struct {
 	Checksum    uint16
 	Identifier  uint16
 	SequenceNum uint16
+	Time     int64
 }
 
-func NewICMPRequest() ICMP  {
+
+func NewICMPRequest(n uint16, t int64) ICMP  {
 	icmp :=  ICMP{
-		8, 0, 0, 0, 0,
+		8, 0, 0, uint16(rand.Uint32()), n , t,
 	}
 	var buf bytes.Buffer
 	binary.Write(&buf, binary.BigEndian, icmp)
@@ -32,6 +35,12 @@ func (icmp ICMP)Bytes()[]byte  {
 	return  buf.Bytes()
 }
 
+func EncodeToICMP(b []byte)ICMP  {
+
+	var icmp ICMP
+	 binary.Read(bytes.NewBuffer(b), binary.BigEndian,&icmp )
+	return  icmp
+}
 
 func CheckSum(data []byte) uint16 {
 	var (
@@ -64,7 +73,7 @@ type Client struct {
 type ICMPStatistic struct {
 
 	From   string `json:"from"`
-    IcmpSeq  int  `json:"icmp_seq"`
+    IcmpSeq  uint16  `json:"icmp_seq"`
     Ttl int    `json:"ttl"`
     Time float64   `json:"time"`
 }
@@ -91,7 +100,7 @@ func NewICMPClient(localAddr , remoteAddr string, num int) (*Client, error) {
     	localAddr: local,
     	remoteAddr: remote,
     	num: num,
-    	icmp: NewICMPRequest(),
+    	icmp: NewICMPRequest(2, time.Now().UnixNano()),
     	conn: conn,
     	resp: make(chan ICMPStatistic, 1),
     	closed: make(chan struct{}, 1),
@@ -104,7 +113,7 @@ func NewICMPClient(localAddr , remoteAddr string, num int) (*Client, error) {
 
 func (c *Client)Send()  {
 	for i:=0 ;i < c.num ;i ++ {
-		c.resp <- c.Handle( i)
+		c.resp <- c.Handle(uint16(i))
 		time.Sleep( time.Second )
 	}
 }
@@ -130,7 +139,7 @@ func (c *Client)run()  {
 	}
 }
 
-func (c *Client)Handle(n int)  ICMPStatistic{
+func (c *Client)Handle(n uint16)  ICMPStatistic{
 	res := make([]byte, 1024)
 	start := time.Now()
 	_, err := c.conn.Write(c.icmp.Bytes())
@@ -139,10 +148,13 @@ func (c *Client)Handle(n int)  ICMPStatistic{
 		panic(err)
 	}
 
-	_, err = c.conn.Read(res)
+	nl , err := c.conn.Read(res)
+
 	if err != nil {
 		panic(err)
 	}
+
+    fmt.Println( res[20:nl])
 
 	dur := float64(time.Since(start).Nanoseconds())/ 1e6
 
