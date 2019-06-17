@@ -10,7 +10,7 @@ import (
 type ParallelClient struct {
    local, remote *net.IPAddr
    count   int
-   sends map[uint16]ICMP
+   sends  sync.Map
    timeout time.Duration
    conn net.Conn
    closed chan struct{}
@@ -43,7 +43,6 @@ func NewParallelClient(localAddr, remoteAddr string, count int , timeout time.Du
         closed: make(chan struct{}),
         results: make(chan  ICMPStatistic, 1),
         buf: make([]byte, 100),
-        sends: make(map[uint16]ICMP),
     }
 
     go client.run()
@@ -66,7 +65,7 @@ func (c *ParallelClient)run()  {
             return
         case res , ok := <-c.results:
             if ok {
-                fmt.Printf(" recv %s:icmp_seq=%d ttl= %d time=%.2f ms\n", res.From, res.IcmpSeq, res.Ttl, res.Time)
+                fmt.Printf(" recv %s:icmp_seq=%d ttl=%d time=%.2f ms\n", res.From, res.IcmpSeq, res.Ttl, res.Time)
                 c.wg.Done()
             }else {
                 return
@@ -81,19 +80,19 @@ func (c *ParallelClient)receive()  {
        if err != nil {
            return
        }
-       c.handleResponse(c.buf[20:n])
+       c.handleResponse(c.buf[:n])
     }
 }
 
 func (c *ParallelClient)handleResponse(b []byte)  {
-     icmp := EncodeToICMP(b)
-     if _, ok := c.sends[icmp.SequenceNum]; !ok {
+     icmp := EncodeToICMP(b[20:])
+     if _, ok := c.sends.Load(icmp.SequenceNum); !ok {
           fmt.Println("icmp not exists , may be consumer already")
          return
      }
-     delete(c.sends, icmp.Identifier)
+     c.sends.Delete(icmp.SequenceNum)
      dur := float64(time.Now().UnixNano() - icmp.Time) / 1e6
-     c.results <- ICMPStatistic{From: c.remote.String(),IcmpSeq: icmp.SequenceNum , Time: float64(dur) }
+     c.results <- ICMPStatistic{From: c.remote.String(),IcmpSeq: icmp.SequenceNum , Time: float64(dur), Ttl:b[8] }
 }
 
 
@@ -109,10 +108,10 @@ func (c *ParallelClient)Send()  {
 
 func (c *ParallelClient)write(n uint16)  {
 	icmp := NewICMPRequest(n, time.Now().UnixNano())
-	if _, ok := c.sends[n];ok {
+	if _, ok := c.sends.Load(n);ok {
 	   fmt.Println("icmp already exists")
         return
     }
-	c.sends[n] = icmp
+	c.sends.Store(n, icmp)
     c.conn.Write(icmp.Bytes())
 }

@@ -74,7 +74,7 @@ type ICMPStatistic struct {
 
 	From   string `json:"from"`
     IcmpSeq  uint16  `json:"icmp_seq"`
-    Ttl int    `json:"ttl"`
+    Ttl  byte    `json:"ttl"`
     Time float64   `json:"time"`
 }
 
