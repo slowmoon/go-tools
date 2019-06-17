@@ -79,10 +79,13 @@ func NewICMPClient(localAddr , remoteAddr string, num int) (*Client, error) {
 	if err != nil {
 		return  nil, err
 	}
-	conn, err := net.DialIP("ipv4:icmp", local, remote)
+
+	conn, err := net.DialIP("ip4:icmp", local, remote)
 	if err != nil {
 		panic(err)
 	}
+
+   conn.SetDeadline(time.Now().Add(time.Second*20))
 
 	client := &Client{
     	localAddr: local,
@@ -90,6 +93,8 @@ func NewICMPClient(localAddr , remoteAddr string, num int) (*Client, error) {
     	num: num,
     	icmp: NewICMPRequest(),
     	conn: conn,
+    	resp: make(chan ICMPStatistic, 1),
+    	closed: make(chan struct{}, 1),
 	}
 	go client.run()
 
@@ -99,30 +104,42 @@ func NewICMPClient(localAddr , remoteAddr string, num int) (*Client, error) {
 
 func (c *Client)Send()  {
 	for i:=0 ;i < c.num ;i ++ {
-		c.resp <- c.Handle(c.conn, i)
+		c.resp <- c.Handle( i)
+		time.Sleep( time.Second )
 	}
+}
+
+func (c *Client)Close()  {
+	c.closed <- struct{}{}
 }
 
 func (c *Client)run()  {
 	for {
 		select {
 		case <- c.closed:
+			c.conn.Close()
+			close(c.resp)
 			return
-		case res := <-c.resp:
-			fmt.Printf("local %s recv :icmp_seq=%d ttl= %d time=%.2f\n", res.From, res.IcmpSeq, res.Ttl, res.Time)
+		case res , ok := <-c.resp:
+			if ok {
+				fmt.Printf(" recv %s:icmp_seq=%d ttl= %d time=%.2f ms\n", res.From, res.IcmpSeq, res.Ttl, res.Time)
+			}else {
+				return
+			}
 		}
 	}
 }
 
-func (c *Client)Handle(conn net.Conn, n int)  ICMPStatistic{
-	res := make([]byte, 100)
+func (c *Client)Handle(n int)  ICMPStatistic{
+	res := make([]byte, 1024)
 	start := time.Now()
-	_, err := conn.Write(c.icmp.Bytes())
+	_, err := c.conn.Write(c.icmp.Bytes())
+
 	if err != nil {
 		panic(err)
 	}
-	nl, err := conn.Read(res)
-    fmt.Printf("receive response %s\n", res[:nl])
+
+	_, err = c.conn.Read(res)
 	if err != nil {
 		panic(err)
 	}
