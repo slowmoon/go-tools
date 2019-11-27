@@ -1,6 +1,9 @@
 package ip
 
-import "net"
+import (
+    "math"
+    "net"
+)
 
 func  GetLocalIPv4()([]net.IP, error)  {
    return  GetLocalIpWithFilter(func(ips net.IP) bool {
@@ -37,4 +40,28 @@ func Ip4ToBytes(ip net.IP) []byte {
 func Bytes2Ipv4(b []byte)net.IP  {
    _ = b[3]
    return  net.IPv4(b[0], b[1], b[2], b[3])
+}
+
+//base ip and mask to get the ip range
+type IP uint32
+func Table(ipnet *net.IPNet)[]IP {
+    var min, max  IP
+    ip := ipnet.IP.To4()
+    mask := ipnet.Mask
+
+    for i:=0;i<4;i++ {
+        b := IP(ip[i] & mask[i])
+        min += b << (uint(3-i)*8)
+    }
+    ones, _ := ipnet.Mask.Size()
+    max := min | IP(math.Pow(2, float64(32- ones))-1)
+    var res []IP
+    for i:=min ; i <=max;i ++ {
+         if i & 0x000000ff ==0 {
+             continue
+         }
+         res = append(res, i)
+    }
+    return res
+
 }

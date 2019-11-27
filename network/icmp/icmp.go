@@ -147,14 +147,10 @@ func (c *Client)Handle(n uint16)  ICMPStatistic{
 	if err != nil {
 		panic(err)
 	}
-
-	nl , err := c.conn.Read(res)
-
+	_ , err = c.conn.Read(res)
 	if err != nil {
 		panic(err)
 	}
-
-    fmt.Println( res[20:nl])
 
 	dur := float64(time.Since(start).Nanoseconds())/ 1e6
 
@@ -162,6 +158,7 @@ func (c *Client)Handle(n uint16)  ICMPStatistic{
 		Time: dur,
 		From: c.remoteAddr.IP.String(),
 		IcmpSeq: n,
+		Ttl: res[8],
 	}
      return  state
 }
