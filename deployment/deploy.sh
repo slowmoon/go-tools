@@ -14,7 +14,7 @@ set -ex
 
 
 docker login -u slowmoon -p along665
-docker build --squash -t ${PROJECT_NAME}:$(new_tag) .
+docker build  -t ${PROJECT_NAME}:$(new_tag) .
 docker rmi ${PROJECT_NAME}:$(new_tag)
 
 
