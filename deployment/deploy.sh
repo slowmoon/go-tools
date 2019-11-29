@@ -14,7 +14,11 @@ set -ex
 
 
 docker login -u slowmoon -p along665
+
 docker build  -t ${PROJECT_NAME}:$(new_tag) .
+
+docker push ${PROJECT_NAME}:$(new_tag)
+
 docker rmi ${PROJECT_NAME}:$(new_tag)
 
 
