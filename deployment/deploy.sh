@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT_NAME="go-tools"
+PROJECT_NAME="slowmoon/go-tools"
 
 this_file=`pwd`"/"$0
 CURRENT_DIR=`dirname $this_file`
@@ -11,7 +11,6 @@ echo `pwd`
 echo $(new_tag)
 
 set -ex
-
 
 docker login -u slowmoon -p along665
 
