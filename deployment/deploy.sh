@@ -11,7 +11,6 @@ echo `pwd`
 echo $(new_tag)
 
 set -ex
-set -eo pipefail
 
 docker login -u slowmoon -p along665
 
