@@ -6,7 +6,7 @@ ADD . ./
 ENV GO111MODULE on
 ENV GOPROXY https://goproxy.io
 
-RUN  CGO_ENABLED=0 GOOS=linux go build -t gotool -ldflags '-s -w'
+RUN  CGO_ENABLED=0 GOOS=linux go build -o gotool -ldflags '-s -w'
 
 
 FROM alpine:3.8
