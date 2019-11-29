@@ -31,4 +31,4 @@ workflows:
   build:
     jobs:
       - "build"
-      - "deployment"
+      - "deploy"
