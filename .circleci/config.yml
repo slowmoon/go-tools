@@ -23,7 +23,7 @@ jobs:
       branches:
         only: test
     steps:
-      - run: checkout
+      - checkout
       - run:  tree  .
       - run: ./deployment/deploy.sh
 
