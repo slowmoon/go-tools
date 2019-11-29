@@ -16,8 +16,6 @@ jobs:
           command: >
             CGO_ENABLED=0 GOOS=linux go build -o test -ldflags '-s -w'
       - run:  ./test
-  build-docker:
-    - images:
   deploy:
     docker:
       - image: circleci/golang:1.13
