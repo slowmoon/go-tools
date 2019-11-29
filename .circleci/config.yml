@@ -1,0 +1,18 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.13
+  filters:
+    branches:
+      only: master
+  worker_directory: ~/repo
+  steps:
+    - checkout
+    - run: go version
+    - run:
+        name: "build golang"
+        command: >
+          CGO_ENABLED=0 GOOS=linux go build -o test -ldflags '-s -w'
+    - run:  ./test
+
