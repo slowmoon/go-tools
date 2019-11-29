@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build1:
+  build:
     docker:
       - image: circleci/golang:1.13
     filters:
@@ -16,7 +16,8 @@ jobs:
           command: >
             CGO_ENABLED=0 GOOS=linux go build -o test -ldflags '-s -w'
       - run:  ./test
-
+  build-docker:
+    - images:
   deploy:
     docker:
       - image: circleci/golang:1.13
@@ -25,9 +26,11 @@ jobs:
         only: test
     steps:
       - run: echo 'hello world'
+      - run: ./deployment/deploy.sh
+
 workflows:
   version: 2
   build:
     jobs:
-      - "build1"
-      - "deploy"
+      - "build"
+      - "deployment"
