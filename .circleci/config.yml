@@ -24,7 +24,7 @@ jobs:
         only: test
     steps:
       - checkout
-      - run:  tree  .
+      - run: ls -al
       - run: ./deployment/deploy.sh
 
 workflows:
