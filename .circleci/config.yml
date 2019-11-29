@@ -25,7 +25,7 @@ jobs:
     steps:
       - checkout
       - run: ls -al
-      - run: ./deployment/deploy.sh
+      - run: sh ./deployment/deploy.sh
 
 workflows:
   version: 2
